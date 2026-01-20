@@ -1,0 +1,174 @@
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+public class UnoGame {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("UNO - Konsolenversion");
+        System.out.print("Anzahl Spieler (2-6): ");
+        int playerCount = Integer.parseInt(scanner.nextLine().trim());
+        if (playerCount < 2) playerCount = 2;
+        if (playerCount > 6) playerCount = 6;
+
+        Deck deck = new Deck();
+        List<Card> discard = new ArrayList<>();
+        List<Player> players = new ArrayList<>();
+
+        for (int i = 1; i <= playerCount; i++) {
+            players.add(new Player("Spieler " + i));
+        }
+
+        // 7 Karten austeilen
+        for (Player p : players) p.drawFrom(deck, 7);
+
+        // Startkarte vom Deck ziehen (keine WILD_DRAW_FOUR als erste Karte)
+        Card top;
+        do {
+            top = deck.draw();
+        } while (top == null || top.getValue() == Card.Value.WILD_DRAW_FOUR);
+        discard.add(top);
+
+        int current = 0;
+        int direction = 1; // 1 = vorwärts, -1 = rückwärts
+        boolean gameOver = false;
+
+        while (!gameOver) {
+            Player p = players.get(current);
+            System.out.println("\nTop Karte: " + discard.get(discard.size() - 1));
+            System.out.println(p.getName() + ", deine Hand:");
+            List<Card> hand = p.getHand();
+            for (int i = 0; i < hand.size(); i++) {
+                System.out.println(i + ": " + hand.get(i));
+            }
+
+            List<Card> playable = p.getPlayableCards(discard.get(discard.size() - 1));
+            if (playable.isEmpty()) {
+                System.out.println("Keine spielbaren Karten. Ziehe eine Karte.");
+                p.drawOne(deck);
+                // optional: wenn gezogene Karte spielbar ist, automatisch legen:
+                Card drawn = hand.get(hand.size() - 1);
+                if (drawn.isPlayableOn(discard.get(discard.size() - 1))) {
+                    System.out.println("Gezogene Karte ist spielbar: " + drawn + " -> wird automatisch gelegt.");
+                    playCardEffect(drawn, p, players, discard, deck, new int[]{current}, new int[]{direction});
+                    p.removeCard(drawn);
+                }
+            } else {
+                System.out.println("Spielbare Karten:");
+                for (int i = 0; i < playable.size(); i++) {
+                    System.out.println(i + ": " + playable.get(i));
+                }
+                System.out.print("Wähle Karte zum Spielen (Index): ");
+                int choice = Integer.parseInt(scanner.nextLine().trim());
+                if (choice < 0 || choice >= playable.size()) {
+                    System.out.println("Ungültige Auswahl. Karte wird nicht gelegt.");
+                } else {
+                    Card toPlay = playable.get(choice);
+                    discard.add(toPlay);
+                    p.removeCard(toPlay);
+                    // Effekte verarbeiten (manche Effekte betreffen den nächsten Spieler)
+                    int[] curArr = new int[]{current};
+                    int[] dirArr = new int[]{direction};
+                    playCardEffect(toPlay, p, players, discard, deck, curArr, dirArr);
+                    current = curArr[0];
+                    direction = dirArr[0];
+                }
+            }
+
+            // UNO-Regel (einfach): wenn ein Spieler 1 Karte hat, Hinweis geben
+            if (p.handSize() == 1) System.out.println(p.getName() + " hat UNO!");
+
+            // Sieg prüfen
+            if (p.handSize() == 0) {
+                System.out.println(p.getName() + " hat gewonnen! Spielende.");
+                gameOver = true;
+                break;
+            }
+
+            // Nächster Spieler (sofern playCardEffect nicht schon geändert hat)
+            if (!gameOver) {
+                current = (current + direction) % players.size();
+                if (current < 0) current += players.size();
+            }
+        }
+        scanner.close();
+    }
+
+    // Wir nutzen Arrays für current/direction Referenz-Pass-by-Reference-Simulation
+    private static void playCardEffect(Card card, Player currentPlayer, List<Player> players,
+                                       List<Card> discard, Deck deck, int[] currentIdx, int[] directionRef) {
+        int size = players.size();
+        int next = (currentIdx[0] + directionRef[0]) % size;
+        if (next < 0) next += size;
+
+        switch (card.getValue()) {
+            case SKIP:
+                System.out.println("Skip! Nächster Spieler wird übersprungen.");
+                // skip = überspringe einen Spieler -> wir bewegen current um +direction zusätzlich
+                currentIdx[0] = (currentIdx[0] + directionRef[0] + directionRef[0]) % size;
+                if (currentIdx[0] < 0) currentIdx[0] += size;
+                break;
+            case REVERSE:
+                System.out.println("Reverse! Spielrichtung ändert sich.");
+                directionRef[0] = -directionRef[0];
+                // Bei 2 Spielern wirkt Reverse wie Skip: nach Richtungswechsel muss man zum anderen Spieler gehen
+                if (size == 2) {
+                    currentIdx[0] = (currentIdx[0] + directionRef[0]) % size;
+                    if (currentIdx[0] < 0) currentIdx[0] += size;
+                } else {
+                    // normale Weitergabe an nächsten Spieler (current bleibt so, main loop erhöht dann weiter)
+                    currentIdx[0] = (currentIdx[0] + directionRef[0]) % size;
+                    if (currentIdx[0] < 0) currentIdx[0] += size;
+                }
+                break;
+            case DRAW_TWO:
+                System.out.println("Draw Two! Nächster Spieler zieht 2 Karten.");
+                players.get(next).drawFrom(deck, 2);
+                // überspringe danach den nächsten Spieler
+                currentIdx[0] = (next + directionRef[0]) % size;
+                if (currentIdx[0] < 0) currentIdx[0] += size;
+                break;
+            case WILD:
+                // Wähle Farbe (vereinfachte Konsole)
+                Card.Color chosen = askForColor();
+                System.out.println("Farbe gewählt: " + chosen);
+                // Da Es eine Wildkarte ist, wir setzen die top-Karte in discard schon — die Farbe muss für Vergleich genutzt werden.
+                // Wir ersetzen die Wild-Karte im discard durch eine Karte mit der gewählten Farbe aber gleicher Value,
+                discard.remove(discard.size() - 1);
+                discard.add(new Card(chosen, Card.Value.WILD));
+                // weiter zum nächsten Spieler
+                currentIdx[0] = (currentIdx[0] + directionRef[0]) % size;
+                if (currentIdx[0] < 0) currentIdx[0] += size;
+                break;
+            case WILD_DRAW_FOUR:
+                Card.Color chosen2 = askForColor();
+                System.out.println("Farbe gewählt: " + chosen2 + ". Nächster Spieler zieht 4 Karten!");
+                players.get(next).drawFrom(deck, 4);
+                discard.remove(discard.size() - 1);
+                discard.add(new Card(chosen2, Card.Value.WILD_DRAW_FOUR));
+                // überspringe danach den nächsten Spieler
+                currentIdx[0] = (next + directionRef[0]) % size;
+                if (currentIdx[0] < 0) currentIdx[0] += size;
+                break;
+            default:
+                // Zahlkarte oder sonst nichts -> normaler Zug: weiter zum nächsten Spieler
+                currentIdx[0] = (currentIdx[0] + directionRef[0]) % size;
+                if (currentIdx[0] < 0) currentIdx[0] += size;
+                break;
+        }
+    }
+
+    private static Card.Color askForColor() {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.print("Wähle Farbe (RED, YELLOW, GREEN, BLUE): ");
+            String s = scanner.nextLine().trim().toUpperCase();
+            try {
+                return Card.Color.valueOf(s);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Ungültige Farbe.");
+            }
+        }
+    }
+}
