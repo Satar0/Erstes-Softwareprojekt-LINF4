@@ -2,6 +2,7 @@
 Software Projekt 
 Poker
 GUI und Features
+Version 1
 Zaid Sharif
 20.01.2026
  */
