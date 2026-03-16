@@ -270,7 +270,7 @@ public class PokerApp extends Application {
 
         // Karten und Chips für jeden Spieler
         for (int i = 0; i < players.length; i++) {
-            String player = players[i];
+            String player = players[i];          //speichert den Namen des aktuellen Spielers
             List<ImageView> cards = new ArrayList<>();
 
             for (int c = 0; c < 2; c++) {
@@ -397,7 +397,7 @@ public class PokerApp extends Application {
                 
                 List<ImageView> views = playerCardViews.get(player);
                 for (ImageView view : views) {
-                    view.setOpacity(0.3);
+                    view.setOpacity(0.3);  //transparent machen
                 }
                 
                 chipLabels.get(player).setText("ELIMINIERT");
@@ -417,9 +417,9 @@ public class PokerApp extends Application {
         return active;
     }
 
-    // Prüfen ob nur noch einer übrig ist
+  
     private boolean checkGameEnd() {
-        List<String> active = getActivePlayers();
+    List<String> active = getActivePlayers(); // Prüfen ob nur noch einer übrig ist
         
         if (active.size() == 1) {
             String winner = active.get(0);
@@ -442,9 +442,9 @@ public class PokerApp extends Application {
 
     // Neue Runde starten
     private void startNewGame() {
-        checkAndEliminateBrokePlayers();
+        checkAndEliminateBrokePlayers();   //Prüft ob Spieler keine Chips mehr haben
         
-        if (checkGameEnd()) return;
+        if (checkGameEnd()) return;     // Prüft, ob das Spiel beendet ist
 
         // Alles zurücksetzen
         pot = 0;
@@ -471,7 +471,7 @@ public class PokerApp extends Application {
 
         // Tischkarten ziehen
         for (int i = 0; i < 5; i++) {
-            tableCardNames.add(deck.remove(0));
+            tableCardNames.add(deck.remove(0));   //Karte entfernen
             tableCardViews.get(i).setImage(new Image(getClass().getResourceAsStream("/ALLCards/Projekt/BlueBack.png")));
         }
 
@@ -485,7 +485,7 @@ public class PokerApp extends Application {
                     view.setOpacity(0.3);
                     view.setImage(new Image(getClass().getResourceAsStream("/ALLCards/Projekt/BlueBack.png")));
                 }
-                continue;
+                continue;         //überspringt den Rest der Schleife für eliminerten Spieler
             }
 
             for (ImageView view : views) {
@@ -494,7 +494,7 @@ public class PokerApp extends Application {
 
             for (int i = 0; i < 2; i++) {
                 String card = deck.remove(0);
-                names.add(card);
+                names.add(card);  //2 Karten
 
                 // Nur eigene Karten aufdecken
                 if (player.equals(PLAYER_NAME)) {
@@ -524,35 +524,56 @@ public class PokerApp extends Application {
             dealerIndex = (dealerIndex + 1) % players.length;
         }
 
-        int smallBlindIndex = findNextActivePlayer(dealerIndex);
-        int bigBlindIndex = findNextActivePlayer(smallBlindIndex);
+// Nächsten aktiven Spieler nach dem Dealer als Small Blind finden
+int smallBlindIndex = findNextActivePlayer(dealerIndex);
 
-        String smallBlindPlayer = players[smallBlindIndex];
-        String bigBlindPlayer = players[bigBlindIndex];
+// Nächsten aktiven Spieler nach dem Small Blind als Big Blind finden
+int bigBlindIndex = findNextActivePlayer(smallBlindIndex);
 
-        // Small Blind
-        int sbAmount = Math.min(SMALL_BLIND, playerChips.get(smallBlindPlayer));
-        playerChips.put(smallBlindPlayer, playerChips.get(smallBlindPlayer) - sbAmount);
-        currentRoundBets.put(smallBlindPlayer, sbAmount);
-        pot += sbAmount;
+// Namen der Spieler für Small Blind und Big Blind holen
+String smallBlindPlayer = players[smallBlindIndex];
+String bigBlindPlayer = players[bigBlindIndex];
 
-        // Big Blind
-        int bbAmount = Math.min(BIG_BLIND, playerChips.get(bigBlindPlayer));
-        playerChips.put(bigBlindPlayer, playerChips.get(bigBlindPlayer) - bbAmount);
-        currentRoundBets.put(bigBlindPlayer, bbAmount);
-        pot += bbAmount;
 
-        currentBet = BIG_BLIND;
+int sbAmount = Math.min(SMALL_BLIND, playerChips.get(smallBlindPlayer));
+    
 
-        updateChipLabels();
-        potLabel.setText("Pot: " + pot);
-        statusLabel.setText("Blinds: " + smallBlindPlayer + " (SB: " + sbAmount + "), " + bigBlindPlayer + " (BB: " + bbAmount + ")");
+playerChips.put(smallBlindPlayer, playerChips.get(smallBlindPlayer) - sbAmount);
+
+// Einsatz für die aktuelle Runde speichern
+currentRoundBets.put(smallBlindPlayer, sbAmount);
+
+// Pot erhöhen
+pot += sbAmount;
+
+
+int bbAmount = Math.min(BIG_BLIND, playerChips.get(bigBlindPlayer));
+
+playerChips.put(bigBlindPlayer, playerChips.get(bigBlindPlayer) - bbAmount);
+
+
+currentRoundBets.put(bigBlindPlayer, bbAmount);
+
+
+pot += bbAmount;
+
+// Aktueller Einsatz für die Runde ist jetzt der Big Blind
+currentBet = BIG_BLIND;
+
+// Anzeigen der aktuellen Chipstände in der UI
+updateChipLabels();
+
+// Pot auf der UI aktualisieren
+potLabel.setText("Pot: " + pot);
+
+// Statusanzeige aktualisieren, wer Small und Big Blind gesetzt hat
+statusLabel.setText("Blinds: " + smallBlindPlayer + " (SB: " + sbAmount + "), " + bigBlindPlayer + " (BB: " + bbAmount + ")"); 
     }
 
     // Nächsten aktiven Spieler finden
     private int findNextActivePlayer(int currentIndex) {
-        int nextIndex = (currentIndex + 1) % players.length;
-        while (eliminatedPlayers.contains(players[nextIndex])) {
+        int nextIndex = (currentIndex + 1) % players.length; //Im Kreis 
+        while (eliminatedPlayers.contains(players[nextIndex])) {  //eliminerte Spieler werden ausgelassen
             nextIndex = (nextIndex + 1) % players.length;
         }
         return nextIndex;
@@ -787,10 +808,10 @@ public class PokerApp extends Application {
         }
     }
 
-    // Bot-Setzrunde nach Spieleraktion
+    // Bot-Setzrunde nach Spieleraktion mit Hilfe geschrieben
     private void processBotBetting() {
         boolean someoneRaised = true;
-        int maxIterations = 10;
+        int maxIterations = 10;  //Begrenzt die maximale Anzahl der Durchläufe für Bot-Aktionen.
         int iterations = 0;
 
         while (someoneRaised && iterations < maxIterations && !gameOver) {
@@ -865,7 +886,7 @@ public class PokerApp extends Application {
         }
     }
 
-    // Bot-Entscheidung basierend auf Handstärke
+    // Bot-Entscheidung basierend auf Handstärke mit Hilfe geschrieben
     private String getBotDecision(String bot, int toCall) {
         int handStrength = evaluateHandStrength(bot);
         int chips = playerChips.get(bot);
@@ -959,7 +980,7 @@ public class PokerApp extends Application {
         return highCard;
     }
 
-    // Kartenwert parsen
+    // Kartenwert mit Hilfe geschrieben
     private int parseCardValue(String valueStr) {
         switch (valueStr) {
             case "A": return 14;
@@ -1030,7 +1051,7 @@ public class PokerApp extends Application {
         }
     }
 
-    // Nächste Karte(n) aufdecken
+    // Nächste Karte aufdecken
     private void revealNextCard() {
         if (revealIndex == 0) {
             // Flop
@@ -1052,7 +1073,7 @@ public class PokerApp extends Application {
         }
     }
 
-    // Gewinner ermitteln
+    // Gewinner ermitteln 
     private void determineWinner() {
         gameOver = true;
         waitingForPlayerAction = false;
@@ -1076,7 +1097,7 @@ public class PokerApp extends Application {
         endGame(winner, "Beste Hand!");
     }
 
-    // Spiel beenden und Pot auszahlen
+    // Spiel beenden und Pot auszahlen 
     private void endGame(String winner, String reason) {
         gameOver = true;
         waitingForPlayerAction = false;
@@ -1162,13 +1183,10 @@ public class PokerApp extends Application {
             "Blinds rotieren jede Runde.\n\n" +
             "🔄 Spielablauf\n" +
             "1. Jeder erhält 2 verdeckte Karten\n" +
-            "2. Setzrunde (Pre-Flop)\n" +
-            "3. Flop: 3 Gemeinschaftskarten\n" +
-            "4. Setzrunde\n" +
-            "5. Turn: 4. Karte\n" +
-            "6. Setzrunde\n" +
-            "7. River: 5. Karte\n" +
-            "8. Finale Setzrunde + Showdown\n\n" +
+            "2. Flop: 3 Gemeinschaftskarten\n" +
+            "3. Turn: 4. Karte\n" +
+            "4. River: 5. Karte\n" +
+            "\n" +
             "🎮 Aktionen\n" +
             "Check - Kein Einsatz (nur wenn möglich)\n" +
             "Call - Aktuellen Einsatz mitgehen\n" +
