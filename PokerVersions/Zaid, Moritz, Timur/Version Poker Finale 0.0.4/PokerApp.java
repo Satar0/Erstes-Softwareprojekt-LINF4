@@ -1162,10 +1162,13 @@ public class PokerApp extends Application {
             "Blinds rotieren jede Runde.\n\n" +
             "🔄 Spielablauf\n" +
             "1. Jeder erhält 2 verdeckte Karten\n" +
-            "2. Flop: 3 Gemeinschaftskarten\n" +
-            "3. Turn: 4. Karte\n" +
-            "4. River: 5. Karte\n" +
-            "\n" +
+            "2. Setzrunde (Pre-Flop)\n" +
+            "3. Flop: 3 Gemeinschaftskarten\n" +
+            "4. Setzrunde\n" +
+            "5. Turn: 4. Karte\n" +
+            "6. Setzrunde\n" +
+            "7. River: 5. Karte\n" +
+            "8. Finale Setzrunde + Showdown\n\n" +
             "🎮 Aktionen\n" +
             "Check - Kein Einsatz (nur wenn möglich)\n" +
             "Call - Aktuellen Einsatz mitgehen\n" +
