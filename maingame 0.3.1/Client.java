@@ -76,6 +76,15 @@ public class Client {
             System.out.println(e);
         }   
     }
+    public void endConnection33(){//closes the connection with the server
+        try{
+            myOutStream.close();
+            mySocket.close();// beenden der Verbindung
+            System.out.println("client hat die verbindung beendet");
+        }catch(Exception e){
+            System.out.println(e);
+        }   
+    }
 }
 
 
